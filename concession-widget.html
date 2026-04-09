@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Concession Calculator — Gorgias Sidebar</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand:       #5c6bc0;
+      --brand-dark:  #3949ab;
+      --brand-light: #e8eaf6;
+      --success:     #2e7d32;
+      --success-bg:  #e8f5e9;
+      --warn:        #e65100;
+      --warn-bg:     #fff3e0;
+      --danger:      #c62828;
+      --danger-bg:   #ffebee;
+      --neutral:     #546e7a;
+      --neutral-bg:  #eceff1;
+      --border:      #cfd8dc;
+      --surface:     #ffffff;
+      --bg:          #f5f6fa;
+      --text:        #263238;
+      --text-muted:  #607d8b;
+      --radius:      6px;
+      --shadow:      0 1px 4px rgba(0,0,0,.12);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 20px;
+    }
+    #sidebar {
+      width: 360px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-header {
+      background: var(--brand);
+      color: #fff;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sidebar-header .logo { font-size: 18px; }
+    .sidebar-header h1 { font-size: 13px; font-weight: 600; letter-spacing: .3px; }
+    .sidebar-header .subtitle { font-size: 11px; opacity: .8; margin-top: 1px; }
+    .lookup-bar {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--brand-light);
+      display: flex;
+      gap: 6px;
+    }
+    .lookup-bar input {
+      flex: 1; padding: 6px 9px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-size: 12px; outline: none; background: #fff;
+    }
+    .lookup-bar input:focus { border-color: var(--brand); }
+    .lookup-bar button {
+      padding: 6px 11px; background: var(--brand); color: #fff;
+      border: none; border-radius: var(--radius); font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .lookup-bar button:hover { background: var(--brand-dark); }
+    #content { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+    /* Cards */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    .card-header {
+      padding: 7px 10px; background: var(--neutral-bg); border-bottom: 1px solid var(--border);
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+      color: var(--neutral); display: flex; align-items: center; gap: 5px;
+    }
+    .card-body { padding: 10px; }
+
+    /* Customer */
+    .customer-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%; background: var(--brand);
+      color: #fff; font-size: 15px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .customer-name { font-weight: 700; font-size: 14px; }
+    .customer-email { color: var(--text-muted); font-size: 11px; margin-top: 1px; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .stat-box { background: var(--bg); border-radius: var(--radius); padding: 7px 8px; text-align: center; }
+    .stat-box .val { font-size: 15px; font-weight: 700; color: var(--brand-dark); }
+    .stat-box .lbl { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+    /* Tier badges */
+    .tier-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 700;
+    }
+    .tier-none     { background: var(--neutral-bg); color: var(--neutral); }
+    .tier-ship     { background: #e3f2fd; color: #1565c0; }
+    .tier-five     { background: var(--warn-bg); color: var(--warn); }
+    .tier-ten      { background: var(--success-bg); color: var(--success); }
+
+    /* Banners */
+    .banner { padding: 8px 10px; border-radius: var(--radius); font-size: 12px; line-height: 1.5; display: flex; gap: 7px; align-items: flex-start; }
+    .banner-warn    { background: var(--warn-bg); color: var(--warn); border: 1px solid #ffcc80; }
+    .banner-info    { background: var(--brand-light); color: var(--brand-dark); border: 1px solid #9fa8da; }
+    .banner-success { background: var(--success-bg); color: var(--success); border: 1px solid #a5d6a7; }
+    .banner-icon    { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+    /* Order table */
+    .order-table { width: 100%; border-collapse: collapse; }
+    .order-table th { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--border); }
+    .order-table td { padding: 5px 6px; font-size: 11px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+    .order-table tr:last-child td { border-bottom: none; }
+    .order-table tr.ticket-order td { background: #faffd7; }
+    .issue-tag { display: inline-block; background: var(--danger-bg); color: var(--danger); border-radius: 3px; padding: 1px 5px; font-size: 10px; }
+    .ok-tag    { display: inline-block; background: var(--success-bg); color: var(--success); border-radius: 3px; padding: 1px 5px; font-size: 10px; }
+
+    /* Metafield display */
+    .metafield-box {
+      background: #1e2228; color: #c9d1d9; border-radius: var(--radius);
+      padding: 10px; font-family: "SF Mono","Fira Code",monospace; font-size: 11px; line-height: 1.7;
+      white-space: pre; overflow-x: auto;
+    }
+    .mf-key   { color: #79c0ff; }
+    .mf-num   { color: #f8cc6f; }
+    .mf-str   { color: #a5d6ff; }
+    .mf-date  { color: #7ee787; }
+    .mf-new   { color: #ff7b72; font-weight: 700; }
+
+    /* Code block */
+    .code-block {
+      background: var(--bg); border: 1px dashed var(--border); border-radius: var(--radius);
+      padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .code-text { font-family: "SF Mono","Fira Code",monospace; font-size: 15px; font-weight: 700; color: var(--brand-dark); letter-spacing: 1.5px; }
+    .copy-btn { padding: 4px 8px; font-size: 11px; background: var(--brand); color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .copy-btn:hover { background: var(--brand-dark); }
+
+    /* Macro */
+    .macro-box {
+      background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 9px; font-size: 12px; line-height: 1.6; color: var(--text);
+      white-space: pre-wrap; max-height: 140px; overflow-y: auto;
+    }
+    .macro-highlight { background: #fffde7; border-radius: 2px; padding: 0 3px; font-weight: 700; font-family: monospace; color: var(--brand-dark); }
+
+    /* Action buttons */
+    .action-row { display: flex; gap: 7px; flex-wrap: wrap; }
+    .btn {
+      flex: 1; padding: 9px 12px; border-radius: var(--radius); font-size: 12px; font-weight: 600;
+      border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 100px;
+    }
+    .btn-primary   { background: var(--brand); color: #fff; }
+    .btn-primary:hover   { background: var(--brand-dark); }
+    .btn-success   { background: var(--success); color: #fff; }
+    .btn-success:hover   { background: #1b5e20; }
+    .btn-secondary { background: var(--neutral-bg); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #dde2e5; }
+    .btn:disabled  { opacity: .4; cursor: not-allowed; }
+
+    /* Log */
+    .log-entry { font-size: 11px; padding: 5px 7px; background: var(--bg); border-radius: 4px; margin-bottom: 4px; border-left: 3px solid var(--border); line-height: 1.5; }
+    .log-entry.success { border-left-color: var(--success); }
+    .log-entry.warn    { border-left-color: var(--warn); }
+    .log-time { color: var(--text-muted); font-size: 10px; }
+
+    /* Poor exp summary table */
+    .exp-table { width: 100%; border-collapse: collapse; }
+    .exp-table th { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--border); }
+    .exp-table td { padding: 5px 6px; font-size: 12px; border-bottom: 1px solid #f0f0f0; }
+    .exp-table tr:last-child td { border-bottom: none; }
+    .count-chip {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 50%; font-weight: 700; font-size: 12px;
+    }
+    .count-active { background: var(--danger-bg); color: var(--danger); }
+    .count-warn   { background: var(--warn-bg); color: var(--warn); }
+    .count-zero   { background: var(--neutral-bg); color: var(--text-muted); }
+    .triggers-badge { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600; }
+    .triggers-yes { background: var(--danger-bg); color: var(--danger); }
+    .triggers-no  { background: var(--neutral-bg); color: var(--text-muted); }
+    .triggers-threshold { background: var(--warn-bg); color: var(--warn); }
+
+    /* Step indicators */
+    .step-indicator {
+      display: flex; gap: 0; margin-bottom: 2px;
+    }
+    .step {
+      flex: 1; padding: 7px 6px; text-align: center; font-size: 11px; font-weight: 600;
+      border-bottom: 3px solid var(--border); color: var(--text-muted);
+    }
+    .step.active { border-bottom-color: var(--brand); color: var(--brand-dark); }
+    .step.done   { border-bottom-color: var(--success); color: var(--success); }
+
+    /* Demo chips */
+    .demo-bar { padding: 8px 12px; background: #fff8e1; border-bottom: 1px solid #ffe082; font-size: 11px; color: #5d4037; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .demo-bar span { font-weight: 700; }
+    .demo-chip { padding: 3px 8px; border-radius: 12px; background: #fff; border: 1px solid #ffe082; cursor: pointer; font-size: 11px; }
+    .demo-chip:hover, .demo-chip.active { background: #ffe082; font-weight: 600; }
+
+    /* Empty state */
+    .empty-state { text-align: center; padding: 30px 20px; color: var(--text-muted); }
+    .empty-state .empty-icon { font-size: 36px; margin-bottom: 10px; }
+    .empty-state p { font-size: 13px; line-height: 1.5; }
+
+    /* Note textarea */
+    .agent-note {
+      width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: var(--radius);
+      font-size: 12px; resize: vertical; outline: none; font-family: inherit;
+    }
+    .agent-note:focus { border-color: var(--brand); }
+
+    /* Approval note for macro */
+    .approval-note { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-style: italic; }
+  </style>
+</head>
+<body>
+<div id="sidebar">
+
+  <div class="sidebar-header">
+    <div class="logo">🎟️</div>
+    <div>
+      <h1>Concession Calculator</h1>
+      <div class="subtitle">Gorgias · Shopify · CX Tool</div>
+    </div>
+  </div>
+
+  <div class="demo-bar">
+    <span>Demo:</span>
+    <div id="demo-chips"></div>
+  </div>
+
+  <div class="lookup-bar">
+    <input type="email" id="email-input" placeholder="customer@email.com" />
+    <button onclick="loadCustomer()">Load</button>
+  </div>
+
+  <div id="content">
+    <div class="empty-state">
+      <div class="empty-icon">👤</div>
+      <p>Enter a customer email or pick a demo profile to begin.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// DATA LAYER
+// 5 profiles covering: VIP first issue, recurring mid-tier, new
+// customer, VIP with recent concession, and no-concession edge case.
+// poor_experience_summary mirrors the Shopify metafield structure.
+// ═══════════════════════════════════════════════════════════════════
+
+const TODAY = "2026-04-09";
+
+const CUSTOMERS = {
+
+  // ── 1. VIP customer, first canceled order, straightforward ──────
+  "sarah.chen@gmail.com": {
+    id: "cust_001",
+    name: "Sarah Chen",
+    email: "sarah.chen@gmail.com",
+    since: "2019-03-12",
+    ltv: 2847.50,
+    orderCount: 31,
+    segment: "VIP",
+    orders: [
+      { id: "#4821", date: "2026-03-28", total: 134.00, issueType: "canceled_order",       issueNote: "Order canceled mid-fulfillment — inventory sync error" },
+      { id: "#4655", date: "2026-02-14", total: 89.00,  issueType: null },
+      { id: "#4501", date: "2026-01-06", total: 112.00, issueType: null },
+      { id: "#4388", date: "2025-11-29", total: 76.00,  issueType: null },
+      { id: "#4210", date: "2025-10-05", total: 98.50,  issueType: null },
+    ],
+    poor_experience_summary: {
+      total: 1,
+      last_occurrence: "2026-03-28",
+      breakdown: {
+        canceled_order:       { count: 1, last_occurrence: "2026-03-28" },
+        wrong_item:           { count: 0, last_occurrence: null },
+        poor_store_experience:{ count: 0, last_occurrence: null },
+      },
+    },
+    concession_history: [],
+    currentTicketContext: {
+      ticketId: "TKT-88234",
+      channel: "email",
+      orderId: "#4821",
+      issueType: "canceled_order",
+    },
+  },
+
+  // ── 2. Mid-tier, wrong_item just hit threshold + canceled_order ──
+  "marcus.powell@yahoo.com": {
+    id: "cust_002",
+    name: "Marcus Powell",
+    email: "marcus.powell@yahoo.com",
+    since: "2021-07-20",
+    ltv: 641.00,
+    orderCount: 9,
+    segment: "Regular",
+    orders: [
+      { id: "#5102", date: "2026-04-01", total: 58.00,  issueType: "canceled_order",        issueNote: "Order auto-canceled — payment declined then recharged in error" },
+      { id: "#4944", date: "2026-01-18", total: 94.00,  issueType: "wrong_item",             issueNote: "Received SKU 3391 instead of 3392 (3rd wrong_item occurrence)" },
+      { id: "#4780", date: "2025-10-03", total: 65.00,  issueType: "wrong_item",             issueNote: "Received wrong colorway — 2nd occurrence" },
+      { id: "#4620", date: "2025-07-11", total: 83.00,  issueType: "wrong_item",             issueNote: "Wrong item in bundle — 1st occurrence" },
+      { id: "#4430", date: "2025-04-28", total: 72.00,  issueType: null },
+    ],
+    poor_experience_summary: {
+      total: 4,
+      last_occurrence: "2026-04-01",
+      breakdown: {
+        canceled_order:       { count: 1, last_occurrence: "2026-04-01" },
+        wrong_item:           { count: 3, last_occurrence: "2026-01-18" },
+        poor_store_experience:{ count: 0, last_occurrence: null },
+      },
+    },
+    concession_history: [],
+    currentTicketContext: {
+      ticketId: "TKT-91045",
+      channel: "chat",
+      orderId: "#5102",
+      issueType: "canceled_order",
+    },
+  },
+
+  // ── 3. New customer, first canceled order, order under $75 ──────
+  "ava.morrison@outlook.com": {
+    id: "cust_003",
+    name: "Ava Morrison",
+    email: "ava.morrison@outlook.com",
+    since: "2026-02-10",
+    ltv: 87.00,
+    orderCount: 2,
+    segment: "New",
+    orders: [
+      { id: "#5299", date: "2026-03-30", total: 54.00,  issueType: "canceled_order",        issueNote: "Order canceled due to warehouse stock discrepancy" },
+      { id: "#5188", date: "2026-02-10", total: 33.00,  issueType: null },
+    ],
+    poor_experience_summary: {
+      total: 1,
+      last_occurrence: "2026-03-30",
+      breakdown: {
+        canceled_order:       { count: 1, last_occurrence: "2026-03-30" },
+        wrong_item:           { count: 0, last_occurrence: null },
+        poor_store_experience:{ count: 0, last_occurrence: null },
+      },
+    },
+    concession_history: [],
+    currentTicketContext: {
+      ticketId: "TKT-92718",
+      channel: "email",
+      orderId: "#5299",
+      issueType: "canceled_order",
+    },
+  },
+
+  // ── 4. High-LTV VIP, concession issued 7 days ago ───────────────
+  "diana.reyes@icloud.com": {
+    id: "cust_004",
+    name: "Diana Reyes",
+    email: "diana.reyes@icloud.com",
+    since: "2018-11-01",
+    ltv: 5120.75,
+    orderCount: 58,
+    segment: "VIP",
+    orders: [
+      { id: "#5311", date: "2026-04-05", total: 290.00, issueType: "canceled_order",        issueNote: "Large order auto-canceled — duplicate fraud flag (false positive)" },
+      { id: "#5220", date: "2026-03-12", total: 99.00,  issueType: "canceled_order",        issueNote: "Canceled — carrier pickup failed, not rescheduled" },
+      { id: "#5088", date: "2026-02-01", total: 120.00, issueType: null },
+      { id: "#4990", date: "2025-12-20", total: 210.00, issueType: null },
+      { id: "#4867", date: "2025-11-04", total: 88.00,  issueType: null },
+    ],
+    poor_experience_summary: {
+      total: 2,
+      last_occurrence: "2026-04-05",
+      breakdown: {
+        canceled_order:       { count: 2, last_occurrence: "2026-04-05" },
+        wrong_item:           { count: 0, last_occurrence: null },
+        poor_store_experience:{ count: 0, last_occurrence: null },
+      },
+    },
+    concession_history: [
+      { date: "2026-04-02", code: "SORRYDIANA10", type: "$5 discount", reason: "Canceled order #5220", agent: "Sam T." },
+    ],
+    currentTicketContext: {
+      ticketId: "TKT-93001",
+      channel: "email",
+      orderId: "#5311",
+      issueType: "canceled_order",
+    },
+  },
+
+  // ── 5. Poor store experience only — no concession triggered ─────
+  "kevin.tran@gmail.com": {
+    id: "cust_005",
+    name: "Kevin Tran",
+    email: "kevin.tran@gmail.com",
+    since: "2023-05-15",
+    ltv: 312.00,
+    orderCount: 7,
+    segment: "Regular",
+    orders: [
+      { id: "#5280", date: "2026-03-22", total: 39.00,  issueType: "poor_store_experience", issueNote: "Complaint about website navigation and checkout flow" },
+      { id: "#5091", date: "2026-01-09", total: 47.00,  issueType: "poor_store_experience", issueNote: "Reported slow loading, couldn't find size guide" },
+      { id: "#4891", date: "2025-10-17", total: 52.00,  issueType: "wrong_item",            issueNote: "Received wrong variant — 1st wrong_item occurrence" },
+      { id: "#4688", date: "2025-07-03", total: 43.00,  issueType: "poor_store_experience", issueNote: "Confusion about return policy — support chat was unhelpful" },
+      { id: "#4510", date: "2025-04-20", total: 44.00,  issueType: null },
+    ],
+    poor_experience_summary: {
+      total: 4,
+      last_occurrence: "2026-03-22",
+      breakdown: {
+        canceled_order:       { count: 0, last_occurrence: null },
+        wrong_item:           { count: 1, last_occurrence: "2025-10-17" },
+        poor_store_experience:{ count: 3, last_occurrence: "2026-03-22" },
+      },
+    },
+    concession_history: [],
+    currentTicketContext: {
+      ticketId: "TKT-93410",
+      channel: "email",
+      orderId: "#5280",
+      issueType: "poor_store_experience",
+    },
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// RULES ENGINE
+// Based on rulebook:
+//   - canceled_order: each count = 1 eligible instance
+//   - wrong_item: floor(count / 3) = eligible instances
+//   - poor_store_experience: never triggers, counter only
+//   - Base tier from current ticket's order value:
+//       < $20 → no concession
+//       $20–$75 → free shipping
+//       $75–$250 → $5 discount
+//       $250+ → $10 discount
+//   - Each additional instance beyond the first → bump up one tier
+//   - Tier ladder: none → free_shipping → discount_5 → discount_10
+// ═══════════════════════════════════════════════════════════════════
+
+const TIERS = [
+  { id: "none",      label: "No Concession",  discountType: "none",         discountValue: 0,  macroKey: null,                 badge: "tier-none", icon: "⬜" },
+  { id: "ship",      label: "Free Shipping",  discountType: "free_shipping",discountValue: 0,  macroKey: "free_ship_apology",  badge: "tier-ship", icon: "🚚" },
+  { id: "five",      label: "$5 Discount",    discountType: "fixed",        discountValue: 5,  macroKey: "discount_5_apology", badge: "tier-five", icon: "🟠" },
+  { id: "ten",       label: "$10 Discount",   discountType: "fixed",        discountValue: 10, macroKey: "discount_10_apology",badge: "tier-ten",  icon: "🟢" },
+];
+
+function calculateTier(customer) {
+  const { poor_experience_summary, orders, currentTicketContext } = customer;
+  const bd = poor_experience_summary.breakdown;
+
+  // Count eligible instances per type
+  const canceledInstances   = bd.canceled_order.count;              // each = 1
+  const wrongItemInstances  = Math.floor(bd.wrong_item.count / 3);  // every 3 = 1
+  // poor_store_experience never triggers directly
+  const totalEligible = canceledInstances + wrongItemInstances;
+
+  // Determine primary triggering type for display + note
+  let triggeringType = null;
+  if (canceledInstances > 0)  triggeringType = "canceled_order";
+  else if (wrongItemInstances > 0) triggeringType = "wrong_item";
+
+  if (totalEligible === 0) {
+    return {
+      tierIndex: 0,
+      tier: TIERS[0],
+      totalEligible: 0,
+      triggeringType: null,
+      baseIndex: 0,
+      bumps: 0,
+      reason: bd.poor_store_experience.count > 0
+        ? `${bd.poor_store_experience.count} poor store experience(s) logged, but this type never directly triggers a concession.`
+        : "No triggering poor experience types found.",
+    };
+  }
+
+  // Base tier from current order value
+  const ticketOrder = orders.find(o => o.id === currentTicketContext.orderId) || orders[0];
+  const val = ticketOrder.total;
+  let baseIndex;
+  if      (val < 20)  baseIndex = 0;   // none
+  else if (val <= 75) baseIndex = 1;   // free shipping
+  else if (val <= 250) baseIndex = 2;  // $5
+  else                 baseIndex = 3;  // $10
+
+  const bumps = totalEligible - 1;
+  const finalIndex = Math.min(baseIndex + bumps, 3);
+
+  // Edge: order < $20 with 1 instance stays at none (baseIndex 0, no bump needed)
+  // With 2+ instances it bumps up from none
+
+  const tier = TIERS[finalIndex];
+  const lines = [];
+  if (val < 20)  lines.push(`Order $${val} < $20 → base: no concession`);
+  else if (val <= 75)  lines.push(`Order $${val} ($20–$75) → base: free shipping`);
+  else if (val <= 250) lines.push(`Order $${val} ($75–$250) → base: $5 discount`);
+  else                 lines.push(`Order $${val} (>$250) → base: $10 discount`);
+
+  if (bumps > 0) lines.push(`+${bumps} bump${bumps>1?"s":""} from ${totalEligible} eligible instances → ${tier.label}`);
+
+  return {
+    tierIndex: finalIndex,
+    tier,
+    totalEligible,
+    triggeringType,
+    baseIndex,
+    bumps,
+    orderValue: val,
+    ticketOrder,
+    reason: lines.join(" · "),
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MACRO TEMPLATES
+// Each contains [DISCOUNT CODE] placeholder pre-filled before display
+// ═══════════════════════════════════════════════════════════════════
+
+const MACROS = {
+  free_ship_apology: (firstName) =>
+`Hi ${firstName},
+
+I'm so sorry for the trouble — that's not the experience we want for you.
+
+As an apology, I've set up free shipping on your next order. Use the code below at checkout:
+
+  [DISCOUNT CODE]
+
+No minimum required, valid for 30 days. Please don't hesitate to reach out if you need anything else.
+
+Warmly,
+{{agent.firstName}} | Customer Experience`,
+
+  discount_5_apology: (firstName) =>
+`Hi ${firstName},
+
+I sincerely apologize for the inconvenience. We pride ourselves on getting this right, and clearly we fell short.
+
+To make it up to you, here's $5 off your next order:
+
+  [DISCOUNT CODE]
+
+Just apply it at checkout — valid for 30 days with no minimum. I hope to see you back soon.
+
+Best,
+{{agent.firstName}} | Customer Experience`,
+
+  discount_10_apology: (firstName) =>
+`Hi ${firstName},
+
+I'm really sorry — I can see this hasn't been a smooth experience, and that's completely on us.
+
+I'd like to offer you $10 off your next order as a sincere apology:
+
+  [DISCOUNT CODE]
+
+Apply it at checkout. It's valid for the next 30 days and there's no minimum spend. Please reach out anytime — we'd love to earn back your trust.
+
+Warmly,
+{{agent.firstName}} | Customer Experience`,
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════════════
+
+function fmtDate(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function daysBetween(a, b) {
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+
+function nowTime() {
+  return new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatMetafield(summary) {
+  const b = summary.breakdown;
+  return [
+    `<span class="mf-key">poor_experience_summary</span>:`,
+    `  <span class="mf-key">total</span>: <span class="mf-num">${summary.total}</span>`,
+    `  <span class="mf-key">last_occurrence</span>: <span class="mf-date">${summary.last_occurrence || "null"}</span>`,
+    `  <span class="mf-key">breakdown</span>:`,
+    `    <span class="mf-key">canceled_order</span>:`,
+    `      <span class="mf-key">count</span>: <span class="mf-num">${b.canceled_order.count}</span>`,
+    `      <span class="mf-key">last_occurrence</span>: <span class="mf-date">${b.canceled_order.last_occurrence || "null"}</span>`,
+    `    <span class="mf-key">wrong_item</span>:`,
+    `      <span class="mf-key">count</span>: <span class="mf-num">${b.wrong_item.count}</span>`,
+    `      <span class="mf-key">last_occurrence</span>: <span class="mf-date">${b.wrong_item.last_occurrence || "null"}</span>`,
+    `    <span class="mf-key">poor_store_experience</span>:`,
+    `      <span class="mf-key">count</span>: <span class="mf-num">${b.poor_store_experience.count}</span>`,
+    `      <span class="mf-key">last_occurrence</span>: <span class="mf-date">${b.poor_store_experience.last_occurrence || "null"}</span>`,
+  ].join("\n");
+}
+
+function formatMetafieldAfterIssue(customer, tierResult, code) {
+  // Simulate what the metafield looks like after logging
+  const b = customer.poor_experience_summary.breakdown;
+  const t = tierResult.triggeringType;
+  const lines = [
+    `<span class="mf-key">poor_experience_summary</span>:`,
+    `  <span class="mf-key">total</span>: <span class="mf-num">${customer.poor_experience_summary.total}</span>`,
+    `  <span class="mf-key">last_occurrence</span>: <span class="mf-date">${customer.poor_experience_summary.last_occurrence}</span>`,
+    `  <span class="mf-key">breakdown</span>:`,
+    `    <span class="mf-key">canceled_order</span>:`,
+    `      <span class="mf-key">count</span>: <span class="mf-num">${b.canceled_order.count}</span>`,
+    `      <span class="mf-key">last_occurrence</span>: <span class="mf-date">${b.canceled_order.last_occurrence || "null"}</span>`,
+    `    <span class="mf-key">wrong_item</span>:`,
+    `      <span class="mf-key">count</span>: <span class="mf-num">${b.wrong_item.count}</span>`,
+    `      <span class="mf-key">last_occurrence</span>: <span class="mf-date">${b.wrong_item.last_occurrence || "null"}</span>`,
+    `    <span class="mf-key">poor_store_experience</span>:`,
+    `      <span class="mf-key">count</span>: <span class="mf-num">${b.poor_store_experience.count}</span>`,
+    `      <span class="mf-key">last_occurrence</span>: <span class="mf-date">${b.poor_store_experience.last_occurrence || "null"}</span>`,
+    `<span class="mf-key">concession_issued</span>:`,
+    `  <span class="mf-new">date: <span class="mf-date">${TODAY}</span></span>`,
+    `  <span class="mf-new">code: <span class="mf-str">"${code}"</span></span>`,
+    `  <span class="mf-new">tier: <span class="mf-str">"${tierResult.tier.label}"</span></span>`,
+    `  <span class="mf-new">ticket: <span class="mf-str">"${customer.currentTicketContext.ticketId}"</span></span>`,
+  ];
+  return lines.join("\n");
+}
+
+function buildOrderNote(ticketOrder, issueType, tier, code) {
+  const noteType = issueType || "n/a";
+  const tierLabel = tier.id === "none" ? "none" : tier.label.toLowerCase();
+  return `[CONCESSION ISSUED ${TODAY}] Type: ${noteType} | Tier: ${tierLabel} | Code: ${code || "N/A"} | Order: ${ticketOrder.id} ($${ticketOrder.total})`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SESSION LOG (simulated metafield + order note writes)
+// ═══════════════════════════════════════════════════════════════════
+
+const SESSION_LOG = [];
+function logEvent(type, msg) { SESSION_LOG.push({ time: nowTime(), type, msg }); }
+
+// ═══════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════
+
+let state = "idle"; // idle → loaded → code_generated → issued
+let currentCustomer   = null;
+let currentTierResult = null;
+let currentCode       = null;
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════════
+
+function renderWidget() {
+  const content = document.getElementById("content");
+  if (state === "idle" || !currentCustomer) {
+    content.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">👤</div>
+        <p>Enter a customer email or select a demo profile to begin.</p>
+      </div>`;
+    return;
+  }
+
+  const c = currentCustomer;
+  const tr = currentTierResult;
+  const bd = c.poor_experience_summary.breakdown;
+  const ticketCtx = c.currentTicketContext;
+  const ticketOrder = c.orders.find(o => o.id === ticketCtx.orderId) || c.orders[0];
+
+  // ── Recent concession check ──
+  const lastConcession = c.concession_history[0] || null;
+  const recentFlag = lastConcession && daysBetween(lastConcession.date, TODAY) <= 30;
+  const recentBanner = recentFlag ? `
+    <div class="banner banner-warn">
+      <span class="banner-icon">⚠️</span>
+      <div>
+        <strong>Concession recently issued</strong> on ${fmtDate(lastConcession.date)}
+        (${daysBetween(lastConcession.date, TODAY)} days ago, code: ${lastConcession.code}).
+        You may still proceed.
+      </div>
+    </div>` : "";
+
+  // ── Poor experience summary table ──
+  const pse = bd.poor_store_experience;
+  const wrongItem = bd.wrong_item;
+  const canceled  = bd.canceled_order;
+
+  const wrongItemProgress = wrongItem.count % 3 === 0 && wrongItem.count > 0
+    ? `${wrongItem.count}/3 ✓` : `${wrongItem.count}/3`;
+
+  const expTable = `
+    <table class="exp-table">
+      <thead><tr><th>Type</th><th>Count</th><th>Last</th><th>Triggers?</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>canceled_order</td>
+          <td><span class="count-chip ${canceled.count > 0 ? 'count-active' : 'count-zero'}">${canceled.count}</span></td>
+          <td>${fmtDate(canceled.last_occurrence)}</td>
+          <td><span class="triggers-badge ${canceled.count > 0 ? 'triggers-yes' : 'triggers-no'}">${canceled.count > 0 ? 'yes (×'+canceled.count+')' : 'not yet'}</span></td>
+        </tr>
+        <tr>
+          <td>wrong_item</td>
+          <td><span class="count-chip ${wrongItem.count >= 3 ? 'count-active' : wrongItem.count > 0 ? 'count-warn' : 'count-zero'}">${wrongItemProgress}</span></td>
+          <td>${fmtDate(wrongItem.last_occurrence)}</td>
+          <td><span class="triggers-badge ${wrongItem.count >= 3 ? 'triggers-yes' : wrongItem.count > 0 ? 'triggers-threshold' : 'triggers-no'}">${wrongItem.count >= 3 ? 'yes (×'+Math.floor(wrongItem.count/3)+')' : wrongItem.count > 0 ? 'need '+(3-wrongItem.count)+' more' : 'not yet'}</span></td>
+        </tr>
+        <tr>
+          <td>poor_store_experience</td>
+          <td><span class="count-chip ${pse.count > 0 ? 'count-warn' : 'count-zero'}">${pse.count}</span></td>
+          <td>${fmtDate(pse.last_occurrence)}</td>
+          <td><span class="triggers-badge triggers-no">counter only</span></td>
+        </tr>
+      </tbody>
+    </table>`;
+
+  // ── Order table ──
+  const orderRows = c.orders.map(o => {
+    const isTicket = o.id === ticketCtx.orderId;
+    return `<tr class="${isTicket ? 'ticket-order' : ''}">
+      <td><strong>${o.id}</strong>${isTicket ? ' 🎫' : ''}</td>
+      <td>${fmtDate(o.date)}</td>
+      <td>$${o.total.toFixed(2)}</td>
+      <td>${o.issueType
+        ? `<span class="issue-tag">${o.issueType.replace(/_/g," ")}</span>${o.issueNote ? `<br><span style="color:var(--text-muted);font-size:10px">${o.issueNote}</span>` : ""}`
+        : `<span class="ok-tag">OK</span>`
+      }</td>
+    </tr>`;
+  }).join("");
+
+  // ── Tier badge ──
+  const badge = `<span class="tier-badge ${tr.tier.badge}">${tr.tier.icon} ${tr.tier.label}</span>`;
+
+  // ── Phase-specific bottom section ──
+  let bottomSection = "";
+
+  if (state === "loaded") {
+    // Step 1: show recommendation, offer to generate
+    bottomSection = `
+      <div class="card">
+        <div class="card-header">🏷️ Recommended Concession</div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px">${badge}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${tr.reason}</div>
+          ${tr.tier.id === "none"
+            ? `<div class="banner banner-info"><span class="banner-icon">ℹ️</span><div>No concession is recommended. Advise customer accordingly — no code will be generated.</div></div>`
+            : `<button class="btn btn-primary" onclick="generateCode()" style="margin-top:4px">🔧 Generate Discount Code</button>`
+          }
+          ${tr.tier.id === "none" && tr.totalEligible === 0
+            ? `<button class="btn btn-secondary" style="margin-top:4px" onclick="resetWidget()">↩ Reset</button>`
+            : ""}
+        </div>
+      </div>
+      ${renderLog()}`;
+
+  } else if (state === "code_generated") {
+    // Step 2: show code + macro for CX approval
+    const macroFn = MACROS[tr.tier.macroKey];
+    const firstName = c.name.split(" ")[0];
+    const rawMacro  = macroFn(firstName);
+    const macroHtml = rawMacro
+      .replace(/\[DISCOUNT CODE\]/g, `<span class="macro-highlight">${currentCode}</span>`)
+      .replace(/\{\{.*?\}\}/g, m => `<span style="color:var(--brand);font-weight:600">${m}</span>`)
+      .replace(/\n/g, "<br>");
+
+    const orderNote = buildOrderNote(ticketOrder, ticketCtx.issueType, tr.tier, currentCode);
+
+    bottomSection = `
+      <div class="card">
+        <div class="card-header">🏷️ Concession — Pending Approval</div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px">${badge}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${tr.reason}</div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted)">Generated Code</div>
+          <div class="code-block">
+            <span class="code-text">${currentCode}</span>
+            <button class="copy-btn" onclick="copyText('${currentCode}','code')">📋 Copy</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">✉️ Macro Preview — ${tr.tier.macroKey}</div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:7px">
+          <div class="macro-box">${macroHtml}</div>
+          <div class="approval-note">Review the macro above, then approve to log everything and insert it into the reply editor.</div>
+          <button class="copy-btn" onclick="copyMacroText()" style="align-self:flex-start;padding:5px 10px">📋 Copy macro text</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">📝 Order Note Preview</div>
+        <div class="card-body">
+          <div style="font-family:monospace;font-size:11px;background:var(--bg);padding:8px;border-radius:var(--radius);border:1px solid var(--border);word-break:break-all">${orderNote}</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">✅ Approve & Log</div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+          <label style="font-size:11px;font-weight:700;color:var(--text-muted)">Agent note (optional)</label>
+          <textarea id="agent-note" class="agent-note" rows="2" placeholder="Add any context for the record…"></textarea>
+          <div class="action-row">
+            <button class="btn btn-success" onclick="approveAndLog()">✅ Approve & Log</button>
+            <button class="btn btn-secondary" onclick="resetWidget()">↩ Reset</button>
+          </div>
+        </div>
+      </div>
+      ${renderLog()}`;
+
+  } else if (state === "issued") {
+    // Step 3: confirmation + updated metafield
+    const orderNote = buildOrderNote(ticketOrder, ticketCtx.issueType, tr.tier, currentCode);
+
+    bottomSection = `
+      <div class="banner banner-success" style="margin:0">
+        <span class="banner-icon">✅</span>
+        <div>
+          <strong>Concession issued.</strong> Code <strong>${currentCode}</strong> logged to customer metafield and order note.
+          Macro inserted into reply editor.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">📦 Updated Metafield</div>
+        <div class="card-body" style="padding:0">
+          <div class="metafield-box">${formatMetafieldAfterIssue(c, tr, currentCode)}</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">📝 Appended Order Note</div>
+        <div class="card-body">
+          <div style="font-family:monospace;font-size:11px;background:var(--bg);padding:8px;border-radius:var(--radius);border:1px solid var(--border);word-break:break-all">${orderNote}</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">🎟️ Issued Code</div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-text">${currentCode}</span>
+            <button class="copy-btn" onclick="copyText('${currentCode}','code')">📋 Copy</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-secondary" onclick="resetWidget()" style="width:100%">↩ New customer</button>
+      ${renderLog()}`;
+  }
+
+  // ── Step progress bar ──
+  const steps = [
+    { label: "Load", done: true },
+    { label: "Generate", done: state === "code_generated" || state === "issued" },
+    { label: "Approve", done: state === "issued" },
+  ];
+  const stepBar = `<div class="step-indicator">
+    ${steps.map((s, i) => {
+      const cls = s.done ? "step done" : (
+        (i === 1 && state === "loaded") ||
+        (i === 2 && state === "code_generated") ? "step active" : "step"
+      );
+      return `<div class="${cls}">${s.done && i < (state === "issued" ? 3 : state === "code_generated" ? 2 : 1) ? "✓ " : ""}${s.label}</div>`;
+    }).join("")}
+  </div>`;
+
+  content.innerHTML = `
+
+    ${stepBar}
+
+    <div class="card">
+      <div class="card-header">👤 Customer · <span style="font-weight:400">${c.segment}</span></div>
+      <div class="card-body">
+        <div class="customer-row">
+          <div class="avatar">${c.name.split(" ").map(n=>n[0]).join("")}</div>
+          <div>
+            <div class="customer-name">${c.name}</div>
+            <div class="customer-email">${c.email} · since ${fmtDate(c.since)}</div>
+          </div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="val">$${c.ltv.toLocaleString()}</div><div class="lbl">LTV</div></div>
+          <div class="stat-box"><div class="val">${c.orderCount}</div><div class="lbl">Orders</div></div>
+          <div class="stat-box"><div class="val">${c.poor_experience_summary.total}</div><div class="lbl">Total Issues</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">🎫 Ticket · ${ticketCtx.ticketId}</div>
+      <div class="card-body" style="font-size:12px;display:flex;flex-direction:column;gap:3px">
+        <div><strong>Order:</strong> ${ticketCtx.orderId} — $${ticketOrder.total.toFixed(2)}</div>
+        <div><strong>Issue type:</strong> ${ticketCtx.issueType?.replace(/_/g," ") || "—"}</div>
+        <div><strong>Channel:</strong> ${ticketCtx.channel}</div>
+      </div>
+    </div>
+
+    ${recentBanner}
+
+    <div class="card">
+      <div class="card-header">⚡ Poor Experience Summary</div>
+      <div class="card-body" style="padding:0">${expTable}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">📦 Order History (last 5) · 🎫 = ticket order</div>
+      <div class="card-body" style="padding:0">
+        <table class="order-table">
+          <thead><tr><th>Order</th><th>Date</th><th>Total</th><th>Issue</th></tr></thead>
+          <tbody>${orderRows}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">📊 Current Metafield</div>
+      <div class="card-body" style="padding:0">
+        <div class="metafield-box">${formatMetafield(c.poor_experience_summary)}</div>
+      </div>
+    </div>
+
+    ${bottomSection}
+  `;
+}
+
+function renderLog() {
+  if (!SESSION_LOG.length) return "";
+  const items = [...SESSION_LOG].reverse().map(e =>
+    `<div class="log-entry ${e.type}"><span class="log-time">${e.time}</span>  ${e.msg}</div>`
+  ).join("");
+  return `<div class="card">
+    <div class="card-header">📋 Session Log</div>
+    <div class="card-body" style="padding:8px">${items}</div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════════════════════════
+
+function loadCustomer(emailOverride) {
+  const email = (emailOverride || document.getElementById("email-input").value.trim()).toLowerCase();
+  const c = CUSTOMERS[email];
+  if (!c) { alert(`No profile for "${email}". Try a demo chip.`); return; }
+  currentCustomer   = c;
+  currentTierResult = calculateTier(c);
+  currentCode       = null;
+  state             = "loaded";
+  document.getElementById("email-input").value = email;
+  logEvent("info", `Loaded: ${c.name} (${email}) · Ticket ${c.currentTicketContext.ticketId}`);
+  renderWidget();
+}
+
+function makeDiscountCode(customer, tier) {
+  if (tier.id === "none") return null;
+  const prefix = { ship: "SHIP", five: "SAVE5", ten: "SAVE10" }[tier.id] || "CODE";
+  const name = customer.name.split(" ")[0].toUpperCase().slice(0, 4);
+  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `${prefix}${name}${rand}`;
+}
+
+function generateCode() {
+  currentCode = makeDiscountCode(currentCustomer, currentTierResult.tier);
+  state = "code_generated";
+  logEvent("success", `[Shopify mock] Discount code created: ${currentCode} (${currentTierResult.tier.label})`);
+  logEvent("info", `[Gorgias] Macro "${currentTierResult.tier.macroKey}" pre-filled with ${currentCode} — awaiting CX approval`);
+  renderWidget();
+}
+
+function approveAndLog() {
+  const agentNote = document.getElementById("agent-note")?.value?.trim() || "";
+  const c = currentCustomer;
+  const tr = currentTierResult;
+  const ticketCtx = c.currentTicketContext;
+  const ticketOrder = c.orders.find(o => o.id === ticketCtx.orderId) || c.orders[0];
+  const orderNote = buildOrderNote(ticketOrder, ticketCtx.issueType, tr.tier, currentCode);
+
+  logEvent("success", `[Shopify metafield] concession_issued written for ${c.name} · code: ${currentCode} · tier: ${tr.tier.label} · ticket: ${ticketCtx.ticketId}${agentNote ? ` · note: "${agentNote}"` : ""}`);
+  logEvent("success", `[Shopify order note] Appended to ${ticketOrder.id}: ${orderNote}`);
+  logEvent("success", `[Gorgias] Macro inserted into reply editor for ${ticketCtx.ticketId}`);
+  logEvent("warn",    `[Shopify metafield] concession_recently_issued flag SET for ${c.name} · suppresses auto-suggest for 30 days`);
+
+  state = "issued";
+  renderWidget();
+}
+
+function copyText(text, type) {
+  navigator.clipboard.writeText(text).then(() => {
+    logEvent("info", `Copied ${type} to clipboard: ${text}`);
+    renderWidget();
+  });
+}
+
+function copyMacroText() {
+  const box = document.querySelector(".macro-box");
+  if (!box) return;
+  navigator.clipboard.writeText(box.innerText).then(() => {
+    logEvent("info", "Macro text copied to clipboard.");
+    renderWidget();
+  });
+}
+
+function resetWidget() {
+  currentCustomer = null; currentTierResult = null; currentCode = null; state = "idle";
+  document.getElementById("email-input").value = "";
+  renderWidget();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DEMO CHIPS
+// ═══════════════════════════════════════════════════════════════════
+
+function buildDemoChips() {
+  const container = document.getElementById("demo-chips");
+  const labels = {
+    "cust_001": "VIP · 1st issue",
+    "cust_002": "Mid · 2 types",
+    "cust_003": "New · 1st issue",
+    "cust_004": "VIP · Recent ⚠️",
+    "cust_005": "No concession",
+  };
+  Object.values(CUSTOMERS).forEach(c => {
+    const chip = document.createElement("button");
+    chip.className = "demo-chip";
+    chip.textContent = labels[c.id] || c.name;
+    chip.onclick = () => {
+      document.querySelectorAll(".demo-chip").forEach(el => el.classList.remove("active"));
+      chip.classList.add("active");
+      loadCustomer(c.email);
+    };
+    container.appendChild(chip);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+
+buildDemoChips();
+renderWidget();
+
+document.getElementById("email-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") loadCustomer();
+});
+</script>
+</body>
+</html>
