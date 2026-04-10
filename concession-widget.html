@@ -189,8 +189,9 @@
     .count-warn   { background: var(--warn-bg); color: var(--warn); }
     .count-zero   { background: var(--neutral-bg); color: var(--text-muted); }
     .triggers-badge { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600; }
-    .triggers-yes { background: var(--danger-bg); color: var(--danger); }
-    .triggers-no  { background: var(--neutral-bg); color: var(--text-muted); }
+    .triggers-yes    { background: var(--danger-bg); color: var(--danger); }
+    .triggers-no     { background: var(--neutral-bg); color: var(--text-muted); }
+    .triggers-review { background: var(--warn-bg); color: var(--warn); }
     .triggers-threshold { background: var(--warn-bg); color: var(--warn); }
 
     /* Step indicators */
@@ -216,11 +217,11 @@
     .empty-state p { font-size: 13px; line-height: 1.5; }
 
     /* Note textarea */
-    .agent-note {
+    .operator-note {
       width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: var(--radius);
       font-size: 12px; resize: vertical; outline: none; font-family: inherit;
     }
-    .agent-note:focus { border-color: var(--brand); }
+    .operator-note:focus { border-color: var(--brand); }
 
     /* Approval note for macro */
     .approval-note { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-style: italic; }
@@ -259,8 +260,9 @@
 <script>
 // ═══════════════════════════════════════════════════════════════════
 // DATA LAYER
-// 5 profiles covering: VIP first issue, recurring mid-tier, new
-// customer, VIP with recent concession, and no-concession edge case.
+// 6 profiles covering: VIP first issue, recurring mid-tier, new
+// customer, VIP with recent concession, no-concession edge case,
+// and missing_order fraud review gate.
 // poor_experience_summary mirrors the Shopify metafield structure.
 // ═══════════════════════════════════════════════════════════════════
 
@@ -289,6 +291,9 @@ const CUSTOMERS = {
       last_occurrence: "2026-03-28",
       breakdown: {
         canceled_order:       { count: 1, last_occurrence: "2026-03-28" },
+        canceled_item:        { count: 0, last_occurrence: null },
+        missing_order:        { count: 0, last_occurrence: null },
+        missing_item:         { count: 0, last_occurrence: null },
         wrong_item:           { count: 0, last_occurrence: null },
         poor_store_experience:{ count: 0, last_occurrence: null },
       },
@@ -323,6 +328,9 @@ const CUSTOMERS = {
       last_occurrence: "2026-04-01",
       breakdown: {
         canceled_order:       { count: 1, last_occurrence: "2026-04-01" },
+        canceled_item:        { count: 0, last_occurrence: null },
+        missing_order:        { count: 0, last_occurrence: null },
+        missing_item:         { count: 0, last_occurrence: null },
         wrong_item:           { count: 3, last_occurrence: "2026-01-18" },
         poor_store_experience:{ count: 0, last_occurrence: null },
       },
@@ -354,6 +362,9 @@ const CUSTOMERS = {
       last_occurrence: "2026-03-30",
       breakdown: {
         canceled_order:       { count: 1, last_occurrence: "2026-03-30" },
+        canceled_item:        { count: 0, last_occurrence: null },
+        missing_order:        { count: 0, last_occurrence: null },
+        missing_item:         { count: 0, last_occurrence: null },
         wrong_item:           { count: 0, last_occurrence: null },
         poor_store_experience:{ count: 0, last_occurrence: null },
       },
@@ -388,12 +399,15 @@ const CUSTOMERS = {
       last_occurrence: "2026-04-05",
       breakdown: {
         canceled_order:       { count: 2, last_occurrence: "2026-04-05" },
+        canceled_item:        { count: 0, last_occurrence: null },
+        missing_order:        { count: 0, last_occurrence: null },
+        missing_item:         { count: 0, last_occurrence: null },
         wrong_item:           { count: 0, last_occurrence: null },
         poor_store_experience:{ count: 0, last_occurrence: null },
       },
     },
     concession_history: [
-      { date: "2026-04-02", code: "SORRYDIANA10", type: "$5 discount", reason: "Canceled order #5220", agent: "Sam T." },
+      { date: "2026-04-02", code: "SORRYDIANA10", type: "$5 discount", reason: "Canceled order #5220", operator: "Sam T." },
     ],
     currentTicketContext: {
       ticketId: "TKT-93001",
@@ -424,6 +438,9 @@ const CUSTOMERS = {
       last_occurrence: "2026-03-22",
       breakdown: {
         canceled_order:       { count: 0, last_occurrence: null },
+        canceled_item:        { count: 0, last_occurrence: null },
+        missing_order:        { count: 0, last_occurrence: null },
+        missing_item:         { count: 0, last_occurrence: null },
         wrong_item:           { count: 1, last_occurrence: "2025-10-17" },
         poor_store_experience:{ count: 3, last_occurrence: "2026-03-22" },
       },
@@ -436,12 +453,51 @@ const CUSTOMERS = {
       issueType: "poor_store_experience",
     },
   },
+  // ── 6. Regular, missing_order — fraud review gate demo ──────────
+  "jordan.kim@gmail.com": {
+    id: "cust_006",
+    name: "Jordan Kim",
+    email: "jordan.kim@gmail.com",
+    since: "2024-08-03",
+    ltv: 228.00,
+    orderCount: 5,
+    segment: "Regular",
+    orders: [
+      { id: "#5401", date: "2026-03-15", total: 72.00,  issueType: "missing_order",  issueNote: "Order never arrived — carrier marked delivered but customer denies receipt" },
+      { id: "#5290", date: "2026-02-02", total: 44.00,  issueType: null },
+      { id: "#5104", date: "2025-12-10", total: 55.00,  issueType: null },
+      { id: "#4980", date: "2025-10-22", total: 31.00,  issueType: null },
+      { id: "#4811", date: "2025-08-14", total: 26.00,  issueType: null },
+    ],
+    poor_experience_summary: {
+      total: 1,
+      last_occurrence: "2026-03-15",
+      breakdown: {
+        canceled_order:       { count: 0, last_occurrence: null },
+        canceled_item:        { count: 0, last_occurrence: null },
+        missing_order:        { count: 0, last_occurrence: null },
+        missing_item:         { count: 0, last_occurrence: null },
+        wrong_item:           { count: 0, last_occurrence: null },
+        poor_store_experience:{ count: 0, last_occurrence: null },
+      },
+    },
+    concession_history: [],
+    currentTicketContext: {
+      ticketId: "TKT-94122",
+      channel: "chat",
+      orderId: "#5401",
+      issueType: "missing_order",
+    },
+  },
 };
 
 // ═══════════════════════════════════════════════════════════════════
 // RULES ENGINE
 // Based on rulebook:
 //   - canceled_order: each count = 1 eligible instance
+//   - canceled_item: each count = 1 eligible instance
+//   - missing_order: each count = 1 eligible instance (manual only — fraud review required first)
+//   - missing_item: each count = 1 eligible instance (manual only — fraud review required first)
 //   - wrong_item: floor(count / 3) = eligible instances
 //   - poor_store_experience: never triggers, counter only
 //   - Base tier from current ticket's order value:
@@ -454,10 +510,10 @@ const CUSTOMERS = {
 // ═══════════════════════════════════════════════════════════════════
 
 const TIERS = [
-  { id: "none",      label: "No Concession",  discountType: "none",         discountValue: 0,  macroKey: null,                 badge: "tier-none", icon: "⬜" },
-  { id: "ship",      label: "Free Shipping",  discountType: "free_shipping",discountValue: 0,  macroKey: "free_ship_apology",  badge: "tier-ship", icon: "🚚" },
-  { id: "five",      label: "$5 Discount",    discountType: "fixed",        discountValue: 5,  macroKey: "discount_5_apology", badge: "tier-five", icon: "🟠" },
-  { id: "ten",       label: "$10 Discount",   discountType: "fixed",        discountValue: 10, macroKey: "discount_10_apology",badge: "tier-ten",  icon: "🟢" },
+  { id: "none",      label: "No Concession",  discountType: "none",         discountValue: 0,  badge: "tier-none", icon: "⬜" },
+  { id: "ship",      label: "Free Shipping",  discountType: "free_shipping",discountValue: 0,  badge: "tier-ship", icon: "🚚" },
+  { id: "five",      label: "$5 Discount",    discountType: "fixed",        discountValue: 5,  badge: "tier-five", icon: "🟠" },
+  { id: "ten",       label: "$10 Discount",   discountType: "fixed",        discountValue: 10, badge: "tier-ten",  icon: "🟢" },
 ];
 
 function calculateTier(customer) {
@@ -465,15 +521,21 @@ function calculateTier(customer) {
   const bd = poor_experience_summary.breakdown;
 
   // Count eligible instances per type
-  const canceledInstances   = bd.canceled_order.count;              // each = 1
-  const wrongItemInstances  = Math.floor(bd.wrong_item.count / 3);  // every 3 = 1
+  const canceledInstances      = bd.canceled_order.count;              // each = 1
+  const canceledItemInstances  = bd.canceled_item.count;               // each = 1
+  const missingOrderInstances  = bd.missing_order.count;               // each = 1 (post fraud review only)
+  const missingItemInstances   = bd.missing_item.count;                // each = 1 (post fraud review only)
+  const wrongItemInstances     = Math.floor(bd.wrong_item.count / 3);  // every 3 = 1
   // poor_store_experience never triggers directly
-  const totalEligible = canceledInstances + wrongItemInstances;
+  const totalEligible = canceledInstances + canceledItemInstances + missingOrderInstances + missingItemInstances + wrongItemInstances;
 
   // Determine primary triggering type for display + note
   let triggeringType = null;
-  if (canceledInstances > 0)  triggeringType = "canceled_order";
-  else if (wrongItemInstances > 0) triggeringType = "wrong_item";
+  if (canceledInstances > 0)           triggeringType = "canceled_order";
+  else if (canceledItemInstances > 0)  triggeringType = "canceled_item";
+  else if (missingOrderInstances > 0)  triggeringType = "missing_order";
+  else if (missingItemInstances > 0)   triggeringType = "missing_item";
+  else if (wrongItemInstances > 0)     triggeringType = "wrong_item";
 
   if (totalEligible === 0) {
     return {
@@ -485,7 +547,7 @@ function calculateTier(customer) {
       bumps: 0,
       reason: bd.poor_store_experience.count > 0
         ? `${bd.poor_store_experience.count} poor store experience(s) logged, but this type never directly triggers a concession.`
-        : "No triggering poor experience types found.",
+        : "No triggering poor experience types found (canceled_order, canceled_item, or wrong_item required).",
     };
   }
 
@@ -528,30 +590,45 @@ function calculateTier(customer) {
 
 // ═══════════════════════════════════════════════════════════════════
 // MACRO TEMPLATES
+// Keyed by poor experience type, not concession tier.
 // Each contains [DISCOUNT CODE] placeholder pre-filled before display
 // ═══════════════════════════════════════════════════════════════════
 
 const MACROS = {
-  free_ship_apology: (firstName) =>
+  canceled_order: (firstName) =>
 `Hi ${firstName},
 
-I'm so sorry for the trouble — that's not the experience we want for you.
+I'm so sorry — your order was canceled and that's not the experience we want for you.
 
-As an apology, I've set up free shipping on your next order. Use the code below at checkout:
+As an apology, here's a code for your next order:
 
   [DISCOUNT CODE]
 
-No minimum required, valid for 30 days. Please don't hesitate to reach out if you need anything else.
+Valid for 30 days with no minimum. Please don't hesitate to reach out if you need anything else.
 
 Warmly,
 {{agent.firstName}} | Customer Experience`,
 
-  discount_5_apology: (firstName) =>
+  canceled_item: (firstName) =>
 `Hi ${firstName},
 
-I sincerely apologize for the inconvenience. We pride ourselves on getting this right, and clearly we fell short.
+I'm really sorry that an item in your order had to be canceled. We know how frustrating that is and we want to make it right.
 
-To make it up to you, here's $5 off your next order:
+Please use this code on your next order:
+
+  [DISCOUNT CODE]
+
+Valid for 30 days with no minimum spend. We appreciate your patience and hope to see you back soon.
+
+Best,
+{{agent.firstName}} | Customer Experience`,
+
+  wrong_item: (firstName) =>
+`Hi ${firstName},
+
+I sincerely apologize — it looks like you received the wrong item and that's completely on us.
+
+To make it right, here's a code for your next order:
 
   [DISCOUNT CODE]
 
@@ -560,18 +637,32 @@ Just apply it at checkout — valid for 30 days with no minimum. I hope to see y
 Best,
 {{agent.firstName}} | Customer Experience`,
 
-  discount_10_apology: (firstName) =>
+  missing_order: (firstName) =>
 `Hi ${firstName},
 
-I'm really sorry — I can see this hasn't been a smooth experience, and that's completely on us.
+I'm so sorry your order never arrived — that's incredibly frustrating and we want to make it right.
 
-I'd like to offer you $10 off your next order as a sincere apology:
+As an apology for the experience, here's a code for your next order:
 
   [DISCOUNT CODE]
 
-Apply it at checkout. It's valid for the next 30 days and there's no minimum spend. Please reach out anytime — we'd love to earn back your trust.
+Valid for 30 days with no minimum. Please don't hesitate to reach out if you need anything else.
 
 Warmly,
+{{agent.firstName}} | Customer Experience`,
+
+  missing_item: (firstName) =>
+`Hi ${firstName},
+
+I'm really sorry — it looks like an item was missing from your order and that's not acceptable.
+
+To make it up to you, here's a code for your next order:
+
+  [DISCOUNT CODE]
+
+Just apply it at checkout — valid for 30 days with no minimum spend. We appreciate your patience.
+
+Best,
 {{agent.firstName}} | Customer Experience`,
 };
 
@@ -602,6 +693,15 @@ function formatMetafield(summary) {
     `    <span class="mf-key">canceled_order</span>:`,
     `      <span class="mf-key">count</span>: <span class="mf-num">${b.canceled_order.count}</span>`,
     `      <span class="mf-key">last_occurrence</span>: <span class="mf-date">${b.canceled_order.last_occurrence || "null"}</span>`,
+    `    <span class="mf-key">canceled_item</span>:`,
+    `      <span class="mf-key">count</span>: <span class="mf-num">${b.canceled_item.count}</span>`,
+    `      <span class="mf-key">last_occurrence</span>: <span class="mf-date">${b.canceled_item.last_occurrence || "null"}</span>`,
+    `    <span class="mf-key">missing_order</span>:`,
+    `      <span class="mf-key">count</span>: <span class="mf-num">${b.missing_order.count}</span>`,
+    `      <span class="mf-key">last_occurrence</span>: <span class="mf-date">${b.missing_order.last_occurrence || "null"}</span>`,
+    `    <span class="mf-key">missing_item</span>:`,
+    `      <span class="mf-key">count</span>: <span class="mf-num">${b.missing_item.count}</span>`,
+    `      <span class="mf-key">last_occurrence</span>: <span class="mf-date">${b.missing_item.last_occurrence || "null"}</span>`,
     `    <span class="mf-key">wrong_item</span>:`,
     `      <span class="mf-key">count</span>: <span class="mf-num">${b.wrong_item.count}</span>`,
     `      <span class="mf-key">last_occurrence</span>: <span class="mf-date">${b.wrong_item.last_occurrence || "null"}</span>`,
@@ -623,6 +723,15 @@ function formatMetafieldAfterIssue(customer, tierResult, code) {
     `    <span class="mf-key">canceled_order</span>:`,
     `      <span class="mf-key">count</span>: <span class="mf-num">${b.canceled_order.count}</span>`,
     `      <span class="mf-key">last_occurrence</span>: <span class="mf-date">${b.canceled_order.last_occurrence || "null"}</span>`,
+    `    <span class="mf-key">canceled_item</span>:`,
+    `      <span class="mf-key">count</span>: <span class="mf-num">${b.canceled_item.count}</span>`,
+    `      <span class="mf-key">last_occurrence</span>: <span class="mf-date">${b.canceled_item.last_occurrence || "null"}</span>`,
+    `    <span class="mf-key">missing_order</span>:`,
+    `      <span class="mf-key">count</span>: <span class="mf-num">${b.missing_order.count}</span>`,
+    `      <span class="mf-key">last_occurrence</span>: <span class="mf-date">${b.missing_order.last_occurrence || "null"}</span>`,
+    `    <span class="mf-key">missing_item</span>:`,
+    `      <span class="mf-key">count</span>: <span class="mf-num">${b.missing_item.count}</span>`,
+    `      <span class="mf-key">last_occurrence</span>: <span class="mf-date">${b.missing_item.last_occurrence || "null"}</span>`,
     `    <span class="mf-key">wrong_item</span>:`,
     `      <span class="mf-key">count</span>: <span class="mf-num">${b.wrong_item.count}</span>`,
     `      <span class="mf-key">last_occurrence</span>: <span class="mf-date">${b.wrong_item.last_occurrence || "null"}</span>`,
@@ -638,10 +747,10 @@ function formatMetafieldAfterIssue(customer, tierResult, code) {
   return lines.join("\n");
 }
 
-function buildOrderNote(ticketOrder, issueType, tier, code) {
+function buildOrderNote(ticketOrder, issueType, tier, code, ticketId) {
   const noteType = issueType || "n/a";
   const tierLabel = tier.id === "none" ? "none" : tier.label.toLowerCase();
-  return `[CONCESSION ISSUED ${TODAY}] Type: ${noteType} | Tier: ${tierLabel} | Code: ${code || "N/A"} | Order: ${ticketOrder.id} ($${ticketOrder.total})`;
+  return `[CONCESSION ISSUED ${TODAY}] Ticket: ${ticketId || "N/A"} | Type: ${noteType} | Tier: ${tierLabel} | Code: ${code || "N/A"} | Order: ${ticketOrder.id} ($${ticketOrder.total})`;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -656,9 +765,10 @@ function logEvent(type, msg) { SESSION_LOG.push({ time: nowTime(), type, msg });
 // ═══════════════════════════════════════════════════════════════════
 
 let state = "idle"; // idle → loaded → code_generated → issued
-let currentCustomer   = null;
-let currentTierResult = null;
-let currentCode       = null;
+let currentCustomer      = null;
+let currentTierResult    = null;
+let currentCode          = null;
+let fraudReviewCleared   = false; // true only after operator manually clears fraud review this session
 
 // ═══════════════════════════════════════════════════════════════════
 // RENDER
@@ -698,46 +808,68 @@ function renderWidget() {
   const pse = bd.poor_store_experience;
   const wrongItem = bd.wrong_item;
   const canceled  = bd.canceled_order;
+  const canceledItem = bd.canceled_item;
+  const missingOrder = bd.missing_order;
+  const missingItem  = bd.missing_item;
 
   const wrongItemProgress = wrongItem.count % 3 === 0 && wrongItem.count > 0
     ? `${wrongItem.count}/3 ✓` : `${wrongItem.count}/3`;
 
-  const expTable = `
-    <table class="exp-table">
-      <thead><tr><th>Type</th><th>Count</th><th>Last</th><th>Triggers?</th></tr></thead>
-      <tbody>
-        <tr>
-          <td>canceled_order</td>
-          <td><span class="count-chip ${canceled.count > 0 ? 'count-active' : 'count-zero'}">${canceled.count}</span></td>
-          <td>${fmtDate(canceled.last_occurrence)}</td>
-          <td><span class="triggers-badge ${canceled.count > 0 ? 'triggers-yes' : 'triggers-no'}">${canceled.count > 0 ? 'yes (×'+canceled.count+')' : 'not yet'}</span></td>
-        </tr>
-        <tr>
-          <td>wrong_item</td>
-          <td><span class="count-chip ${wrongItem.count >= 3 ? 'count-active' : wrongItem.count > 0 ? 'count-warn' : 'count-zero'}">${wrongItemProgress}</span></td>
-          <td>${fmtDate(wrongItem.last_occurrence)}</td>
-          <td><span class="triggers-badge ${wrongItem.count >= 3 ? 'triggers-yes' : wrongItem.count > 0 ? 'triggers-threshold' : 'triggers-no'}">${wrongItem.count >= 3 ? 'yes (×'+Math.floor(wrongItem.count/3)+')' : wrongItem.count > 0 ? 'need '+(3-wrongItem.count)+' more' : 'not yet'}</span></td>
-        </tr>
-        <tr>
-          <td>poor_store_experience</td>
-          <td><span class="count-chip ${pse.count > 0 ? 'count-warn' : 'count-zero'}">${pse.count}</span></td>
-          <td>${fmtDate(pse.last_occurrence)}</td>
-          <td><span class="triggers-badge triggers-no">counter only</span></td>
-        </tr>
-      </tbody>
-    </table>`;
+  const expRows = [
+    canceled.count > 0 ? `<tr>
+      <td>canceled_order</td>
+      <td><span class="count-chip count-active">${canceled.count}</span></td>
+      <td>${fmtDate(canceled.last_occurrence)}</td>
+      <td><span class="triggers-badge triggers-yes">yes (×${canceled.count})</span></td>
+    </tr>` : "",
+    canceledItem.count > 0 ? `<tr>
+      <td>canceled_item</td>
+      <td><span class="count-chip count-active">${canceledItem.count}</span></td>
+      <td>${fmtDate(canceledItem.last_occurrence)}</td>
+      <td><span class="triggers-badge triggers-yes">yes (×${canceledItem.count})</span></td>
+    </tr>` : "",
+    missingOrder.count > 0 ? `<tr>
+      <td>missing_order</td>
+      <td><span class="count-chip count-active">${missingOrder.count}</span></td>
+      <td>${fmtDate(missingOrder.last_occurrence)}</td>
+      <td><span class="triggers-badge triggers-yes">yes (×${missingOrder.count})</span></td>
+    </tr>` : "",
+    missingItem.count > 0 ? `<tr>
+      <td>missing_item</td>
+      <td><span class="count-chip count-active">${missingItem.count}</span></td>
+      <td>${fmtDate(missingItem.last_occurrence)}</td>
+      <td><span class="triggers-badge triggers-yes">yes (×${missingItem.count})</span></td>
+    </tr>` : "",
+    wrongItem.count > 0 ? `<tr>
+      <td>wrong_item</td>
+      <td><span class="count-chip ${wrongItem.count >= 3 ? 'count-active' : 'count-warn'}">${wrongItemProgress}</span></td>
+      <td>${fmtDate(wrongItem.last_occurrence)}</td>
+      <td><span class="triggers-badge ${wrongItem.count >= 3 ? 'triggers-yes' : 'triggers-threshold'}">${wrongItem.count >= 3 ? 'yes (×'+Math.floor(wrongItem.count/3)+')' : 'need '+(3-wrongItem.count)+' more'}</span></td>
+    </tr>` : "",
+    pse.count > 0 ? `<tr>
+      <td>poor_store_experience</td>
+      <td><span class="count-chip count-warn">${pse.count}</span></td>
+      <td>${fmtDate(pse.last_occurrence)}</td>
+      <td><span class="triggers-badge triggers-no">counter only</span></td>
+    </tr>` : "",
+  ].filter(Boolean).join("");
 
-  // ── Order table ──
-  const orderRows = c.orders.map(o => {
+  const expTable = expRows
+    ? `<table class="exp-table">
+        <thead><tr><th>Type</th><th>Count</th><th>Last</th><th>Triggers?</th></tr></thead>
+        <tbody>${expRows}</tbody>
+      </table>`
+    : `<div style="padding:10px 12px;font-size:12px;color:var(--text-muted)">No poor experiences recorded.</div>`;
+
+  // ── Order table — poor experience orders only ──
+  const poorOrders = c.orders.filter(o => o.issueType || o.id === ticketCtx.orderId);
+  const orderRows = poorOrders.map(o => {
     const isTicket = o.id === ticketCtx.orderId;
     return `<tr class="${isTicket ? 'ticket-order' : ''}">
       <td><strong>${o.id}</strong>${isTicket ? ' 🎫' : ''}</td>
       <td>${fmtDate(o.date)}</td>
       <td>$${o.total.toFixed(2)}</td>
-      <td>${o.issueType
-        ? `<span class="issue-tag">${o.issueType.replace(/_/g," ")}</span>${o.issueNote ? `<br><span style="color:var(--text-muted);font-size:10px">${o.issueNote}</span>` : ""}`
-        : `<span class="ok-tag">OK</span>`
-      }</td>
+      <td><span class="issue-tag">${o.issueType.replace(/_/g," ")}</span>${o.issueNote ? `<br><span style="color:var(--text-muted);font-size:10px">${o.issueNote}</span>` : ""}</td>
     </tr>`;
   }).join("");
 
@@ -748,18 +880,42 @@ function renderWidget() {
   let bottomSection = "";
 
   if (state === "loaded") {
+    const isFraudType = ticketCtx.issueType === "missing_order" || ticketCtx.issueType === "missing_item";
+    const needsFraudGate = isFraudType && !fraudReviewCleared;
+
+    const fraudGate = needsFraudGate ? `
+      <div class="card">
+        <div class="card-header">🔍 Fraud Review Required</div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+          <div class="banner banner-warn" style="margin:0">
+            <span class="banner-icon">⚠️</span>
+            <div><strong>${ticketCtx.issueType.replace(/_/g," ")}</strong> cases must complete fraud review before a concession can be issued. Do not proceed until review is confirmed.</div>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="fraud-confirm" onchange="document.getElementById('fraud-clear-btn').disabled=!this.checked">
+            I confirm fraud review has been completed for this ticket
+          </label>
+          <button id="fraud-clear-btn" class="btn btn-primary" onclick="markFraudReviewCleared()" disabled style="margin-top:4px">
+            ✅ Mark fraud review cleared &amp; log
+          </button>
+        </div>
+      </div>` : "";
+
     // Step 1: show recommendation, offer to generate
     bottomSection = `
+      ${fraudGate}
       <div class="card">
         <div class="card-header">🏷️ Recommended Concession</div>
         <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
           <div style="display:flex;align-items:center;gap:10px">${badge}</div>
           <div style="font-size:12px;color:var(--text-muted)">${tr.reason}</div>
-          ${tr.tier.id === "none"
-            ? `<div class="banner banner-info"><span class="banner-icon">ℹ️</span><div>No concession is recommended. Advise customer accordingly — no code will be generated.</div></div>`
-            : `<button class="btn btn-primary" onclick="generateCode()" style="margin-top:4px">🔧 Generate Discount Code</button>`
+          ${needsFraudGate
+            ? `<div class="banner banner-info" style="margin:0"><span class="banner-icon">ℹ️</span><div>Complete fraud review above before generating a code.</div></div>`
+            : tr.tier.id === "none"
+              ? `<div class="banner banner-info"><span class="banner-icon">ℹ️</span><div>No concession is recommended. Advise customer accordingly — no code will be generated.</div></div>`
+              : `<button class="btn btn-primary" onclick="generateCode()" style="margin-top:4px">🔧 Generate Discount Code</button>`
           }
-          ${tr.tier.id === "none" && tr.totalEligible === 0
+          ${tr.tier.id === "none" && tr.totalEligible === 0 && !needsFraudGate
             ? `<button class="btn btn-secondary" style="margin-top:4px" onclick="resetWidget()">↩ Reset</button>`
             : ""}
         </div>
@@ -768,7 +924,7 @@ function renderWidget() {
 
   } else if (state === "code_generated") {
     // Step 2: show code + macro for CX approval
-    const macroFn = MACROS[tr.tier.macroKey];
+    const macroFn = MACROS[tr.triggeringType];
     const firstName = c.name.split(" ")[0];
     const rawMacro  = macroFn(firstName);
     const macroHtml = rawMacro
@@ -776,7 +932,7 @@ function renderWidget() {
       .replace(/\{\{.*?\}\}/g, m => `<span style="color:var(--brand);font-weight:600">${m}</span>`)
       .replace(/\n/g, "<br>");
 
-    const orderNote = buildOrderNote(ticketOrder, ticketCtx.issueType, tr.tier, currentCode);
+    const orderNote = buildOrderNote(ticketOrder, ticketCtx.issueType, tr.tier, currentCode, ticketCtx.ticketId);
 
     bottomSection = `
       <div class="card">
@@ -789,10 +945,11 @@ function renderWidget() {
             <span class="code-text">${currentCode}</span>
             <button class="copy-btn" onclick="copyText('${currentCode}','code')">📋 Copy</button>
           </div>
+          <div style="font-size:11px;color:var(--text-muted)">Single-use · restricted to ${c.email} · valid 30 days</div>
         </div>
       </div>
       <div class="card">
-        <div class="card-header">✉️ Macro Preview — ${tr.tier.macroKey}</div>
+        <div class="card-header">✉️ Macro Preview — ${tr.triggeringType}</div>
         <div class="card-body" style="display:flex;flex-direction:column;gap:7px">
           <div class="macro-box">${macroHtml}</div>
           <div class="approval-note">Review the macro above, then approve to log everything and insert it into the reply editor.</div>
@@ -808,8 +965,8 @@ function renderWidget() {
       <div class="card">
         <div class="card-header">✅ Approve & Log</div>
         <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
-          <label style="font-size:11px;font-weight:700;color:var(--text-muted)">Agent note (optional)</label>
-          <textarea id="agent-note" class="agent-note" rows="2" placeholder="Add any context for the record…"></textarea>
+          <label style="font-size:11px;font-weight:700;color:var(--text-muted)">Operator note (optional)</label>
+          <textarea id="operator-note" class="operator-note" rows="2" placeholder="Add any context for the record…"></textarea>
           <div class="action-row">
             <button class="btn btn-success" onclick="approveAndLog()">✅ Approve & Log</button>
             <button class="btn btn-secondary" onclick="resetWidget()">↩ Reset</button>
@@ -820,7 +977,7 @@ function renderWidget() {
 
   } else if (state === "issued") {
     // Step 3: confirmation + updated metafield
-    const orderNote = buildOrderNote(ticketOrder, ticketCtx.issueType, tr.tier, currentCode);
+    const orderNote = buildOrderNote(ticketOrder, ticketCtx.issueType, tr.tier, currentCode, ticketCtx.ticketId);
 
     bottomSection = `
       <div class="banner banner-success" style="margin:0">
@@ -910,7 +1067,7 @@ function renderWidget() {
     </div>
 
     <div class="card">
-      <div class="card-header">📦 Order History (last 5) · 🎫 = ticket order</div>
+      <div class="card-header">📦 Poor Experience Orders · 🎫 = ticket order</div>
       <div class="card-body" style="padding:0">
         <table class="order-table">
           <thead><tr><th>Order</th><th>Date</th><th>Total</th><th>Issue</th></tr></thead>
@@ -918,6 +1075,26 @@ function renderWidget() {
         </table>
       </div>
     </div>
+
+    ${c.concession_history.length > 0 ? `
+    <div class="card">
+      <div class="card-header">🎁 Concession History</div>
+      <div class="card-body" style="padding:0">
+        <table class="order-table">
+          <thead><tr><th>Date</th><th>Code</th><th>Type</th><th>Reason</th><th>Operator</th></tr></thead>
+          <tbody>
+            ${c.concession_history.map(h => `
+            <tr>
+              <td>${fmtDate(h.date)}</td>
+              <td><span style="font-family:monospace;font-size:11px">${h.code}</span></td>
+              <td>${h.type}</td>
+              <td style="color:var(--text-muted);font-size:11px">${h.reason}</td>
+              <td style="color:var(--text-muted);font-size:11px">${h.operator || "—"}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>` : ""}
 
     <div class="card">
       <div class="card-header">📊 Current Metafield</div>
@@ -945,14 +1122,35 @@ function renderLog() {
 // ACTIONS
 // ═══════════════════════════════════════════════════════════════════
 
+function markFraudReviewCleared() {
+  const c = currentCustomer;
+  const issueType = c.currentTicketContext.issueType; // missing_order or missing_item
+  const bd = c.poor_experience_summary.breakdown;
+
+  // Increment the count and set last_occurrence for this type
+  bd[issueType].count += 1;
+  bd[issueType].last_occurrence = TODAY;
+  c.poor_experience_summary.total += 1;
+  if (!c.poor_experience_summary.last_occurrence || TODAY > c.poor_experience_summary.last_occurrence) {
+    c.poor_experience_summary.last_occurrence = TODAY;
+  }
+
+  fraudReviewCleared = true;
+  currentTierResult = calculateTier(c);
+
+  logEvent("success", `[Fraud review cleared] ${issueType.replace(/_/g," ")} confirmed for ${c.name} · Ticket ${c.currentTicketContext.ticketId} · ${issueType} count now ${bd[issueType].count}`);
+  renderWidget();
+}
+
 function loadCustomer(emailOverride) {
   const email = (emailOverride || document.getElementById("email-input").value.trim()).toLowerCase();
   const c = CUSTOMERS[email];
   if (!c) { alert(`No profile for "${email}". Try a demo chip.`); return; }
-  currentCustomer   = c;
-  currentTierResult = calculateTier(c);
-  currentCode       = null;
-  state             = "loaded";
+  currentCustomer    = c;
+  currentTierResult  = calculateTier(c);
+  currentCode        = null;
+  fraudReviewCleared = false;
+  state              = "loaded";
   document.getElementById("email-input").value = email;
   logEvent("info", `Loaded: ${c.name} (${email}) · Ticket ${c.currentTicketContext.ticketId}`);
   renderWidget();
@@ -969,20 +1167,20 @@ function makeDiscountCode(customer, tier) {
 function generateCode() {
   currentCode = makeDiscountCode(currentCustomer, currentTierResult.tier);
   state = "code_generated";
-  logEvent("success", `[Shopify mock] Discount code created: ${currentCode} (${currentTierResult.tier.label})`);
-  logEvent("info", `[Gorgias] Macro "${currentTierResult.tier.macroKey}" pre-filled with ${currentCode} — awaiting CX approval`);
+  logEvent("success", `[Shopify mock] Discount code created: ${currentCode} (${currentTierResult.tier.label}) · single-use · restricted to ${currentCustomer.email}`);
+  logEvent("info", `[Gorgias] Macro "${currentTierResult.triggeringType}" pre-filled with ${currentCode} — awaiting CX approval`);
   renderWidget();
 }
 
 function approveAndLog() {
-  const agentNote = document.getElementById("agent-note")?.value?.trim() || "";
+  const operatorNote = document.getElementById("operator-note")?.value?.trim() || "";
   const c = currentCustomer;
   const tr = currentTierResult;
   const ticketCtx = c.currentTicketContext;
   const ticketOrder = c.orders.find(o => o.id === ticketCtx.orderId) || c.orders[0];
-  const orderNote = buildOrderNote(ticketOrder, ticketCtx.issueType, tr.tier, currentCode);
+  const orderNote = buildOrderNote(ticketOrder, ticketCtx.issueType, tr.tier, currentCode, ticketCtx.ticketId);
 
-  logEvent("success", `[Shopify metafield] concession_issued written for ${c.name} · code: ${currentCode} · tier: ${tr.tier.label} · ticket: ${ticketCtx.ticketId}${agentNote ? ` · note: "${agentNote}"` : ""}`);
+  logEvent("success", `[Shopify metafield] concession_issued written for ${c.name} · code: ${currentCode} · tier: ${tr.tier.label} · ticket: ${ticketCtx.ticketId}${operatorNote ? ` · note: "${operatorNote}"` : ""}`);
   logEvent("success", `[Shopify order note] Appended to ${ticketOrder.id}: ${orderNote}`);
   logEvent("success", `[Gorgias] Macro inserted into reply editor for ${ticketCtx.ticketId}`);
   logEvent("warn",    `[Shopify metafield] concession_recently_issued flag SET for ${c.name} · suppresses auto-suggest for 30 days`);
@@ -1025,6 +1223,7 @@ function buildDemoChips() {
     "cust_003": "New · 1st issue",
     "cust_004": "VIP · Recent ⚠️",
     "cust_005": "No concession",
+    "cust_006": "Fraud review gate",
   };
   Object.values(CUSTOMERS).forEach(c => {
     const chip = document.createElement("button");

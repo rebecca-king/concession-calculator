@@ -1,20 +1,20 @@
 # Concession Calculator — Gorgias Sidebar Widget
 
-A CX agent tool that calculates, generates, and logs customer concessions directly inside the Gorgias support interface. Built as a working prototype with simulated data modeled after real e-commerce operations workflows.
+A CX operator tool that calculates, generates, and logs customer concessions directly inside the Gorgias support interface. Built as a working prototype with simulated data modeled after real e-commerce operations workflows.
 
 ---
 
 ## What It Does
 
-When a customer contacts support about a poor experience, CX agents typically have to:
+When a customer contacts support about a poor experience, CX operators typically have to:
 
-1. Look up the customer's order history manually
+1. Review the customer's order history manually
 2. Decide what concession (if any) is appropriate
 3. Generate a discount code in Shopify
 4. Copy it into a reply macro
-5. Log the concession somewhere for future reference
+5. Log the concession somewhere for future reference — if it happens at all, it's inconsistent and hard to track across systems
 
-This tool collapses all five steps into a single sidebar widget. The agent loads a customer by email, sees their full context, gets a policy-driven recommendation, generates a code in one click, reviews the pre-filled macro, and approves — everything is logged automatically.
+This tool collapses all five steps into a single sidebar widget. The operator loads a customer by email, sees their full context, gets a policy-driven recommendation, generates a code in one click, reviews the pre-filled macro, and approves — everything is logged automatically.
 
 ---
 
@@ -22,10 +22,10 @@ This tool collapses all five steps into a single sidebar widget. The agent loads
 
 Inconsistent concessions erode margin and create fairness issues. Without a structured system:
 
-- Different agents issue different discount levels for identical situations
+- Different operators issue different discount levels for identical situations
 - High-claim customers receive repeated concessions with no visibility
-- There's no audit trail connecting a concession to a ticket, order, or agent
-- New agents have no guidance on what's appropriate
+- There's no audit trail connecting a concession to a ticket, order, or operator
+- New operators have no guidance on what's appropriate
 
 This tool enforces a single policy, surfaces risk signals, and creates a complete record on every concession issued.
 
@@ -56,15 +56,26 @@ The tier ladder is: `No concession → Free shipping → $5 off → $10 off`
 
 ## Poor Experience Tracking
 
-Customer poor experiences are stored in a Shopify metafield (`poor_experience_summary`) with a count breakdown by type. Not all types are created equal:
+Customer poor experiences are stored in a Shopify metafield (`poor_experience_summary`) with a count breakdown by type. Not all types are created equal.
+
+> **Note:** Refunds are handled separately through the standard order management process where applicable. The concessions tracked here — discount codes, free shipping — are issued *in addition to* any refund, as a makegood for the overall experience.
 
 | Type | Triggers a concession? | Rule |
 |---|---|---|
 | `canceled_order` | Yes | Each occurrence = 1 eligible instance |
+| `canceled_item` | Yes | Each occurrence = 1 eligible instance |
+| `missing_order` | Yes, manual only | Each cleared occurrence = 1 eligible instance — requires fraud review first |
+| `missing_item` | Yes, manual only | Each cleared occurrence = 1 eligible instance — requires fraud review first |
 | `wrong_item` | Yes, after threshold | Every **3 occurrences** = 1 eligible instance |
 | `poor_store_experience` | Never directly | Increments the counter, but cannot trigger a concession on its own |
 
 This prevents single low-severity complaints from generating automatic discounts while still building a record over time.
+
+### Missing order / missing item — fraud review gate
+
+`missing_order` and `missing_item` follow a different process from other types. Because these cases carry fraud risk, the widget **blocks the concession flow** until an operator manually confirms that fraud review has been completed for the ticket.
+
+Once confirmed, the operator clicks "Mark fraud review cleared & log" — this increments the count in the breakdown, recalculates the recommended tier, and unlocks the normal generate → approve flow. The clearing action is logged in the session log.
 
 ### Metafield structure
 
@@ -76,6 +87,15 @@ poor_experience_summary:
     canceled_order:
       count: 1
       last_occurrence: 2026-01-15
+    canceled_item:
+      count: 0
+      last_occurrence: null
+    missing_order:
+      count: 0
+      last_occurrence: null
+    missing_item:
+      count: 0
+      last_occurrence: null
     wrong_item:
       count: 3
       last_occurrence: 2026-02-03
@@ -98,12 +118,12 @@ The widget runs as a Gorgias sidebar app. It auto-loads the customer associated 
                  instance count. Recent concession flag shown if a code was
                  issued within the last 30 days (warning only — does not block).
 
-3. Generate   →  Agent clicks "Generate Discount Code." A unique code is
+3. Generate   →  Operator clicks "Generate Discount Code." A unique code is
                  created via the Shopify Discounts API and inserted into the
                  appropriate macro template as [DISCOUNT CODE].
 
-4. Approve    →  Agent reviews the pre-filled macro and order note preview.
-                 Optional free-text note field for context. Agent clicks
+4. Approve    →  Operator reviews the pre-filled macro and order note preview.
+                 Optional free-text note field for context. Operator clicks
                  "Approve & Log."
 
 5. Log        →  Three writes happen simultaneously:
@@ -116,17 +136,18 @@ The widget runs as a Gorgias sidebar app. It auto-loads the customer associated 
 ### Order note format
 
 ```
-[CONCESSION ISSUED 2026-04-09] Type: canceled_order | Tier: $5 discount | Code: SAVE5SARA3K2X | Order: #4821 ($134.00)
+[CONCESSION ISSUED 2026-04-09] Ticket: TKT-88234 | Type: canceled_order | Tier: $5 discount | Code: SAVE5SARA3K2X | Order: #4821 ($134.00)
 ```
 
 ### Macro mapping
 
-| Tier | Macro |
+Macros are tied to the **poor experience type**, not the concession tier. This ensures the reply language matches what the customer actually experienced.
+
+| Poor Experience Type | Macro |
 |---|---|
-| No concession | No macro generated |
-| Free shipping | `free_ship_apology` |
-| $5 discount | `discount_5_apology` |
-| $10 discount | `discount_10_apology` |
+| `canceled_order` | `canceled_order` |
+| `canceled_item` | `canceled_item` |
+| `wrong_item` | `wrong_item` |
 
 ---
 
@@ -141,6 +162,7 @@ The prototype includes 5 simulated customer profiles that cover the key scenario
 | Ava Morrison | New customer, first canceled order, $54 order | Free shipping |
 | Diana Reyes | VIP, 2 canceled orders, $290 order, concession issued 7 days ago | $10 discount + recent concession warning |
 | Kevin Tran | 3× poor store experience + 1× wrong_item (below threshold) | No concession triggered |
+| Jordan Kim | Regular, missing order — carrier marked delivered, customer denies receipt | Fraud review gate → free shipping after clearance |
 
 ---
 
@@ -176,6 +198,22 @@ The widget UI and business logic in this prototype are designed to match that pr
 - Vanilla HTML, CSS, JavaScript — no framework, no build tooling
 - Designed to embed as a Gorgias sidebar app (340px fixed width)
 - All state is in-memory; persistence is simulated via console-style session log
+
+---
+
+---
+
+## Future Improvements
+
+### Issue count decay
+
+Currently, poor experience counts never decay — an incident from two years ago carries the same weight as one from last week. The recommended approach is a **rolling 12-month window**: only occurrences within the past 12 months count toward eligible instances. This is simple to explain to operators, straightforward to implement (filter breakdown entries by `last_occurrence` date at calculation time), and prevents a customer's historical record from permanently inflating their tier long after the relationship has recovered.
+
+A shorter window (e.g. 6 months) could be considered for lower-severity types like `wrong_item`, while keeping a longer window for higher-severity types like `missing_order`. That said, starting with a single consistent window across all types is easier to communicate and audit.
+
+### Segment-aware tier logic
+
+Currently, customer segment (VIP / Regular / New) has no effect on the concession calculation — tier is determined solely by order value and eligible instance count. A future improvement would allow segment to influence the base tier or bump behavior. For example, a VIP's first issue might warrant starting one tier higher, or a New customer's first issue might be capped to avoid over-investing before a relationship is established. Any segment-based adjustments should be defined in the rulebook before being implemented here.
 
 ---
 
