@@ -12,7 +12,7 @@ When a customer contacts support about a poor experience, CX operators typically
 2. Decide what concession (if any) is appropriate
 3. Generate a discount code in Shopify
 4. Copy it into a reply macro
-5. Log the concession somewhere for future reference — if it happens at all, it's inconsistent and hard to track across systems
+5. Log the concession somewhere for future reference (if it happens at all, it's inconsistent and hard to track across systems)
 
 This tool collapses all five steps into a single sidebar widget. The operator loads a customer by email, sees their full context, gets a policy-driven recommendation, generates a code in one click, reviews the pre-filled macro, and approves — everything is logged automatically.
 
