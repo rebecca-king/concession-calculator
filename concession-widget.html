@@ -815,60 +815,61 @@ function renderWidget() {
   const wrongItemProgress = wrongItem.count % 3 === 0 && wrongItem.count > 0
     ? `${wrongItem.count}/3 ✓` : `${wrongItem.count}/3`;
 
-  const expTable = `
-    <table class="exp-table">
-      <thead><tr><th>Type</th><th>Count</th><th>Last</th><th>Triggers?</th></tr></thead>
-      <tbody>
-        <tr>
-          <td>canceled_order</td>
-          <td><span class="count-chip ${canceled.count > 0 ? 'count-active' : 'count-zero'}">${canceled.count}</span></td>
-          <td>${fmtDate(canceled.last_occurrence)}</td>
-          <td><span class="triggers-badge ${canceled.count > 0 ? 'triggers-yes' : 'triggers-no'}">${canceled.count > 0 ? 'yes (×'+canceled.count+')' : 'not yet'}</span></td>
-        </tr>
-        <tr>
-          <td>canceled_item</td>
-          <td><span class="count-chip ${canceledItem.count > 0 ? 'count-active' : 'count-zero'}">${canceledItem.count}</span></td>
-          <td>${fmtDate(canceledItem.last_occurrence)}</td>
-          <td><span class="triggers-badge ${canceledItem.count > 0 ? 'triggers-yes' : 'triggers-no'}">${canceledItem.count > 0 ? 'yes (×'+canceledItem.count+')' : 'not yet'}</span></td>
-        </tr>
-        <tr>
-          <td>missing_order</td>
-          <td><span class="count-chip ${missingOrder.count > 0 ? 'count-active' : 'count-zero'}">${missingOrder.count}</span></td>
-          <td>${fmtDate(missingOrder.last_occurrence)}</td>
-          <td><span class="triggers-badge ${missingOrder.count > 0 ? 'triggers-yes' : 'triggers-review'}">${missingOrder.count > 0 ? 'yes (×'+missingOrder.count+')' : 'manual only'}</span></td>
-        </tr>
-        <tr>
-          <td>missing_item</td>
-          <td><span class="count-chip ${missingItem.count > 0 ? 'count-active' : 'count-zero'}">${missingItem.count}</span></td>
-          <td>${fmtDate(missingItem.last_occurrence)}</td>
-          <td><span class="triggers-badge ${missingItem.count > 0 ? 'triggers-yes' : 'triggers-review'}">${missingItem.count > 0 ? 'yes (×'+missingItem.count+')' : 'manual only'}</span></td>
-        </tr>
-        <tr>
-          <td>wrong_item</td>
-          <td><span class="count-chip ${wrongItem.count >= 3 ? 'count-active' : wrongItem.count > 0 ? 'count-warn' : 'count-zero'}">${wrongItemProgress}</span></td>
-          <td>${fmtDate(wrongItem.last_occurrence)}</td>
-          <td><span class="triggers-badge ${wrongItem.count >= 3 ? 'triggers-yes' : wrongItem.count > 0 ? 'triggers-threshold' : 'triggers-no'}">${wrongItem.count >= 3 ? 'yes (×'+Math.floor(wrongItem.count/3)+')' : wrongItem.count > 0 ? 'need '+(3-wrongItem.count)+' more' : 'not yet'}</span></td>
-        </tr>
-        <tr>
-          <td>poor_store_experience</td>
-          <td><span class="count-chip ${pse.count > 0 ? 'count-warn' : 'count-zero'}">${pse.count}</span></td>
-          <td>${fmtDate(pse.last_occurrence)}</td>
-          <td><span class="triggers-badge triggers-no">counter only</span></td>
-        </tr>
-      </tbody>
-    </table>`;
+  const expRows = [
+    canceled.count > 0 ? `<tr>
+      <td>canceled_order</td>
+      <td><span class="count-chip count-active">${canceled.count}</span></td>
+      <td>${fmtDate(canceled.last_occurrence)}</td>
+      <td><span class="triggers-badge triggers-yes">yes (×${canceled.count})</span></td>
+    </tr>` : "",
+    canceledItem.count > 0 ? `<tr>
+      <td>canceled_item</td>
+      <td><span class="count-chip count-active">${canceledItem.count}</span></td>
+      <td>${fmtDate(canceledItem.last_occurrence)}</td>
+      <td><span class="triggers-badge triggers-yes">yes (×${canceledItem.count})</span></td>
+    </tr>` : "",
+    missingOrder.count > 0 ? `<tr>
+      <td>missing_order</td>
+      <td><span class="count-chip count-active">${missingOrder.count}</span></td>
+      <td>${fmtDate(missingOrder.last_occurrence)}</td>
+      <td><span class="triggers-badge triggers-yes">yes (×${missingOrder.count})</span></td>
+    </tr>` : "",
+    missingItem.count > 0 ? `<tr>
+      <td>missing_item</td>
+      <td><span class="count-chip count-active">${missingItem.count}</span></td>
+      <td>${fmtDate(missingItem.last_occurrence)}</td>
+      <td><span class="triggers-badge triggers-yes">yes (×${missingItem.count})</span></td>
+    </tr>` : "",
+    wrongItem.count > 0 ? `<tr>
+      <td>wrong_item</td>
+      <td><span class="count-chip ${wrongItem.count >= 3 ? 'count-active' : 'count-warn'}">${wrongItemProgress}</span></td>
+      <td>${fmtDate(wrongItem.last_occurrence)}</td>
+      <td><span class="triggers-badge ${wrongItem.count >= 3 ? 'triggers-yes' : 'triggers-threshold'}">${wrongItem.count >= 3 ? 'yes (×'+Math.floor(wrongItem.count/3)+')' : 'need '+(3-wrongItem.count)+' more'}</span></td>
+    </tr>` : "",
+    pse.count > 0 ? `<tr>
+      <td>poor_store_experience</td>
+      <td><span class="count-chip count-warn">${pse.count}</span></td>
+      <td>${fmtDate(pse.last_occurrence)}</td>
+      <td><span class="triggers-badge triggers-no">counter only</span></td>
+    </tr>` : "",
+  ].filter(Boolean).join("");
 
-  // ── Order table ──
-  const orderRows = c.orders.map(o => {
+  const expTable = expRows
+    ? `<table class="exp-table">
+        <thead><tr><th>Type</th><th>Count</th><th>Last</th><th>Triggers?</th></tr></thead>
+        <tbody>${expRows}</tbody>
+      </table>`
+    : `<div style="padding:10px 12px;font-size:12px;color:var(--text-muted)">No poor experiences recorded.</div>`;
+
+  // ── Order table — poor experience orders only ──
+  const poorOrders = c.orders.filter(o => o.issueType || o.id === ticketCtx.orderId);
+  const orderRows = poorOrders.map(o => {
     const isTicket = o.id === ticketCtx.orderId;
     return `<tr class="${isTicket ? 'ticket-order' : ''}">
       <td><strong>${o.id}</strong>${isTicket ? ' 🎫' : ''}</td>
       <td>${fmtDate(o.date)}</td>
       <td>$${o.total.toFixed(2)}</td>
-      <td>${o.issueType
-        ? `<span class="issue-tag">${o.issueType.replace(/_/g," ")}</span>${o.issueNote ? `<br><span style="color:var(--text-muted);font-size:10px">${o.issueNote}</span>` : ""}`
-        : `<span class="ok-tag">OK</span>`
-      }</td>
+      <td><span class="issue-tag">${o.issueType.replace(/_/g," ")}</span>${o.issueNote ? `<br><span style="color:var(--text-muted);font-size:10px">${o.issueNote}</span>` : ""}</td>
     </tr>`;
   }).join("");
 
@@ -944,6 +945,7 @@ function renderWidget() {
             <span class="code-text">${currentCode}</span>
             <button class="copy-btn" onclick="copyText('${currentCode}','code')">📋 Copy</button>
           </div>
+          <div style="font-size:11px;color:var(--text-muted)">Single-use · restricted to ${c.email} · valid 30 days</div>
         </div>
       </div>
       <div class="card">
@@ -1065,7 +1067,7 @@ function renderWidget() {
     </div>
 
     <div class="card">
-      <div class="card-header">📦 Order History (last 5) · 🎫 = ticket order</div>
+      <div class="card-header">📦 Poor Experience Orders · 🎫 = ticket order</div>
       <div class="card-body" style="padding:0">
         <table class="order-table">
           <thead><tr><th>Order</th><th>Date</th><th>Total</th><th>Issue</th></tr></thead>
@@ -1165,7 +1167,7 @@ function makeDiscountCode(customer, tier) {
 function generateCode() {
   currentCode = makeDiscountCode(currentCustomer, currentTierResult.tier);
   state = "code_generated";
-  logEvent("success", `[Shopify mock] Discount code created: ${currentCode} (${currentTierResult.tier.label})`);
+  logEvent("success", `[Shopify mock] Discount code created: ${currentCode} (${currentTierResult.tier.label}) · single-use · restricted to ${currentCustomer.email}`);
   logEvent("info", `[Gorgias] Macro "${currentTierResult.triggeringType}" pre-filled with ${currentCode} — awaiting CX approval`);
   renderWidget();
 }
